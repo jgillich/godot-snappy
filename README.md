@@ -4,7 +4,7 @@ A vertex snapping plugin for Godot 4 (currently in alpha, Godot 3 is not support
 
 ## How to install
 
-Clone this directory into `addons/` and enable the addon in your project settings.
+Clone this repository into `addons/` and enable the addon in your project settings.
 
 ## How to use
 
@@ -14,6 +14,6 @@ Clone this directory into `addons/` and enable the addon in your project setting
 
 ## Caveats
 
-* You must hover on a vertex, being close is not good enough.
+* You must hover on a face, being close is not good enough.
 * The move/rotate gizmo can get in the way.
 * Plugin is new and may have bugs.
