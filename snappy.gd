@@ -25,8 +25,8 @@ func _forward_3d_draw_over_viewport(overlay):
 func _forward_3d_gui_input(camera, event):
 	if event is InputEventMouse and selected != null and Input.is_key_pressed(KEY_V):
 		var from = camera.project_ray_origin(event.position)
-		var to = from + camera.project_ray_normal(event.position) * ray_length
 		var direction = camera.project_ray_normal(event.position)
+		var to = from + direction * ray_length
 
 		if event.button_mask != MOUSE_BUTTON_LEFT:
 			var meshes = find_meshes(selected)
