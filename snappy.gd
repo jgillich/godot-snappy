@@ -1,12 +1,16 @@
 @tool
 extends EditorPlugin
 
-const ray_length = 1000
-const vec_inf = Vector3(INF, INF, INF)  # Workaround for Vector3.INF typing issue
+const RAY_LENGTH = 1000
+# Workaround for Vector3.INF GDScript issue https://github.com/godotengine/godot/issues/61643
+const VECTOR_INF = Vector3(INF, INF, INF)
+
+@onready var undo_redo = get_undo_redo()
+var undo_position = null
 
 var selection = get_editor_interface().get_selection()
 var selected : Node3D = null
-
+var dragging = false
 var origin = Vector3()
 var origin_2d = null
 
@@ -24,38 +28,54 @@ func _forward_3d_draw_over_viewport(overlay):
 	pass
 
 func _forward_3d_gui_input(camera, event):
-	if event is InputEventMouse and selected != null and Input.is_key_pressed(KEY_V):
+	# We need mouse events to get the cursor position
+	# This means pressing V when no mouse events are being sent does nothing
+	# It's rarely noticable though
+	if selected == null or not event is InputEventMouse:
+		return false
+		
+	#if event is InputEventMouse:
+	var now_dragging = event.button_mask == MOUSE_BUTTON_LEFT and Input.is_key_pressed(KEY_V)
+	if dragging and not now_dragging and origin != VECTOR_INF:
+		undo_redo.create_action("Snap vertex")
+		undo_redo.add_do_property(selected, "position", selected.position)
+		undo_redo.add_undo_property(selected, "position", undo_position)
+		undo_redo.commit_action()
+	dragging = now_dragging
+
+		
+	if Input.is_key_pressed(KEY_V):
 		var from = camera.project_ray_origin(event.position)
 		var direction = camera.project_ray_normal(event.position)
-		var to = from + direction * ray_length
+		var to = from + direction * RAY_LENGTH
 
-		if event.button_mask != MOUSE_BUTTON_LEFT:
+		if not dragging:
 			var meshes = find_meshes(selected)
 			origin = find_closest_point(meshes, from, direction)
+			undo_position = selected.position
 
-			if origin != vec_inf:
+			if origin != VECTOR_INF:
 				origin_2d = camera.unproject_position(origin)
 			else:
 				origin_2d = null
 			update_overlays()
-		else:
-			if origin != vec_inf:
-				origin_2d = camera.unproject_position(origin)
-				update_overlays()
-				var ids = RenderingServer.instances_cull_ray(from, to, selected.get_world_3d().scenario)
-				var meshes = []
-				for id in ids:
-					var obj = instance_from_id(id)
-					if obj != selected and obj.get_parent() != selected and obj is Node3D:
-						meshes += find_meshes(obj)
- 
-				var target = find_closest_point(meshes, from, direction)
-				if target != vec_inf:
-					selected.translate((target * selected.global_transform.basis) - (origin * selected.global_transform.basis))
-					origin = target
-					
-				return true
-	if not Input.is_key_pressed(KEY_V):
+		elif origin != VECTOR_INF:
+			origin_2d = camera.unproject_position(origin)
+			update_overlays()
+			var ids = RenderingServer.instances_cull_ray(from, to, selected.get_world_3d().scenario)
+			var meshes = []
+			for id in ids:
+				var obj = instance_from_id(id)
+				if obj != selected and obj.get_parent() != selected and obj is Node3D:
+					meshes += find_meshes(obj)
+
+			var target = find_closest_point(meshes, from, direction)
+			if target != VECTOR_INF:
+				selected.translate((target * selected.global_transform.basis) - (origin * selected.global_transform.basis))
+				origin = target
+			return true
+	else:
+		origin = VECTOR_INF
 		origin_2d = null
 		update_overlays()
 	return false
@@ -78,12 +98,7 @@ func find_meshes(node : Node3D) -> Array:
 	return meshes
 	
 func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> Vector3:
-	# We cache the distance to not recalculate it for every check.
-	# This also means we can use INF as the initial value. Any actual
-	# distance will be smaller. We also use an infinite vector as the
-	# invalid closest point. Otherwise vertices at position (0, 0, 0)
-	# would not be considered as the closest point.
-	var closest := vec_inf
+	var closest := VECTOR_INF
 	var closest_distance := INF
 	
 	# We will not use the distance between the vertex and the from position,
@@ -102,7 +117,7 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 			var current_on_ray := Geometry3D.get_closest_point_to_segment_uncapped(
 				current_point, segment_start, segment_end)
 			var current_distance := current_on_ray.distance_to(current_point)
-			if closest == vec_inf or current_distance < closest_distance:
+			if closest == VECTOR_INF or current_distance < closest_distance:
 				closest = current_point
 				closest_distance = current_distance
 	
