@@ -6,18 +6,11 @@ const ray_length = 1000
 var selection = get_editor_interface().get_selection()
 var selected : Node3D = null
 
-@onready var Marker = preload("res://addons/snappy/marker.tscn")
-
 var origin = Vector3()
 var origin_2d = null
 
-
-
 func _enter_tree():
 	selection.connect("selection_changed", _on_selection_changed)
-
-#func _exit_tree():
-	
 	
 func _handles(object):
 	if object is Node3D:
