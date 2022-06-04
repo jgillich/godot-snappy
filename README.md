@@ -2,10 +2,6 @@
 
 A vertex snapping plugin for Godot 4 (currently in alpha, Godot 3 is not supported).
 
-## How to install
-
-Clone this repository into `addons/` and enable the addon in your project settings.
-
 ## How to use
 
 1. Select an object in the 3D view
