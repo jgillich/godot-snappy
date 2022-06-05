@@ -82,8 +82,6 @@ func _forward_3d_gui_input(camera, event):
 
 func _on_selection_changed():
 	var nodes = selection.get_selected_nodes()
-	if nodes.size() > 0:
-		print(nodes[0])
 	if nodes.size() > 0 and nodes[0] is Node3D:
 		selected = nodes[0]
 	else:
