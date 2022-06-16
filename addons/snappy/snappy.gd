@@ -6,7 +6,7 @@ const RAY_LENGTH = 1000
 const VECTOR_INF = Vector3(INF, INF, INF)
 
 onready var undo_redo = get_undo_redo()
-var undo_position = null
+var undo_transform = null
 
 var selection = get_editor_interface().get_selection()
 var selected : Spatial = null
@@ -38,8 +38,8 @@ func forward_spatial_gui_input(camera, event):
 	var now_dragging = event.button_mask == BUTTON_MASK_LEFT and Input.is_key_pressed(KEY_V)
 	if dragging and not now_dragging and origin != VECTOR_INF:
 		undo_redo.create_action("Snap vertex")
-		undo_redo.add_do_property(selected, "position", selected.transform.origin)
-		undo_redo.add_undo_property(selected, "position", undo_position)
+		undo_redo.add_do_property(selected, "transform", selected.transform)
+		undo_redo.add_undo_property(selected, "transform", undo_transform)
 		undo_redo.commit_action()
 	dragging = now_dragging
 		
@@ -51,7 +51,7 @@ func forward_spatial_gui_input(camera, event):
 		if not dragging:
 			var meshes = find_meshes(selected)
 			origin = find_closest_point(meshes, from, direction)
-			undo_position = selected.transform.origin
+			undo_transform = selected.transform
 
 			if origin != VECTOR_INF:
 				origin_2d = camera.unproject_position(origin)
