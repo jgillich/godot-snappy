@@ -1,6 +1,6 @@
 # godot-snappy
 
-A vertex snapping plugin for Godot 4 (currently in alpha, Godot 3 is not supported).
+A vertex snapping plugin for Godot 3.
 
 ## How to use
 
