@@ -35,9 +35,8 @@ func forward_spatial_gui_input(camera, event):
 		return false
 		
 	#if event is InputEventMouse:
-	var now_dragging = event.button_mask == 1 and Input.is_key_pressed(KEY_V)
+	var now_dragging = event.button_mask == BUTTON_MASK_LEFT and Input.is_key_pressed(KEY_V)
 	if dragging and not now_dragging and origin != VECTOR_INF:
-		print("ho")
 		undo_redo.create_action("Snap vertex")
 		undo_redo.add_do_property(selected, "position", selected.transform.origin)
 		undo_redo.add_undo_property(selected, "position", undo_position)
