@@ -16,7 +16,7 @@ var origin_2d = null
 
 func _enter_tree():
 	selection.connect("selection_changed", _on_selection_changed)
-	
+
 func _handles(object):
 	if object is Node3D:
 		return true
@@ -33,7 +33,7 @@ func _forward_3d_gui_input(camera, event):
 	# It's rarely noticable though
 	if selected == null or not event is InputEventMouse:
 		return false
-		
+
 	#if event is InputEventMouse:
 	var now_dragging = event.button_mask == MOUSE_BUTTON_LEFT and Input.is_key_pressed(KEY_V)
 	if dragging and not now_dragging and origin != VECTOR_INF:
@@ -43,7 +43,7 @@ func _forward_3d_gui_input(camera, event):
 		undo_redo.commit_action()
 	dragging = now_dragging
 
-		
+
 	if Input.is_key_pressed(KEY_V):
 		var from = camera.project_ray_origin(event.position)
 		var direction = camera.project_ray_normal(event.position)
@@ -71,7 +71,7 @@ func _forward_3d_gui_input(camera, event):
 
 			var target = find_closest_point(meshes, from, direction)
 			if target != VECTOR_INF:
-				selected.translate((target * selected.global_transform.basis) - (origin * selected.global_transform.basis))
+				selected.position -= origin - target
 				origin = target
 			return true
 	else:
@@ -96,11 +96,11 @@ func find_meshes(node : Node3D) -> Array:
 		if child is Node3D:
 			meshes += find_meshes(child)
 	return meshes
-	
+
 func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> Vector3:
 	var closest := VECTOR_INF
 	var closest_distance := INF
-	
+
 	# We will not use the distance between the vertex and the from position,
 	# (that would always be the vertex closest to the camera). Instead we
 	# use the distance between the vertex and the ray under the mouse cursor.
@@ -109,7 +109,7 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 	# large meshes. This is a good balance between performance and accuracy.
 	var segment_start := from
 	var segment_end := from + direction
-	
+
 	for mesh in meshes:
 		var vertices = mesh.get_mesh().get_faces()
 		for i in range(vertices.size()):
@@ -120,5 +120,5 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 			if closest == VECTOR_INF or current_distance < closest_distance:
 				closest = current_point
 				closest_distance = current_distance
-	
+
 	return closest
