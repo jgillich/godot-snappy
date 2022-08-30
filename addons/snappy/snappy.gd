@@ -71,7 +71,7 @@ func _forward_3d_gui_input(camera, event):
 
 			var target = find_closest_point(meshes, from, direction)
 			if target != VECTOR_INF:
-				selected.position -= origin - target
+				selected.global_position -= origin - target
 				origin = target
 			return true
 	else:
