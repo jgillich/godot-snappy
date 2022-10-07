@@ -70,7 +70,7 @@ func forward_spatial_gui_input(camera, event):
 
 			var target = find_closest_point(meshes, from, direction)
 			if target != VECTOR_INF:
-				selected.translate((selected.global_transform.basis.xform(target)) - (selected.global_transform.basis.xform(origin)))
+				selected.global_transform.origin -= origin - target
 				origin = target
 			return true
 	else:
