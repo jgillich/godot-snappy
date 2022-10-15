@@ -33,8 +33,7 @@ func forward_spatial_gui_input(camera, event):
 	# It's rarely noticable though
 	if selected == null or not event is InputEventMouse:
 		return false
-		
-	#if event is InputEventMouse:
+	
 	var now_dragging = event.button_mask == BUTTON_MASK_LEFT and Input.is_key_pressed(KEY_V)
 	if dragging and not now_dragging and origin != VECTOR_INF:
 		undo_redo.create_action("Snap vertex")
@@ -89,7 +88,10 @@ func _on_selection_changed():
 
 func find_meshes(node : Spatial) -> Array:
 	var meshes : Array = []
+	#The node can be a CSG or a meshinstance to be supported
 	if node is MeshInstance:
+		meshes.append(node)
+	if node is CSGShape:
 		meshes.append(node)
 	for child in node.get_children():
 		if child is Spatial:
@@ -110,7 +112,15 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 	var segment_end := from + direction
 	
 	for mesh in meshes:
-		var vertices = mesh.get_mesh().get_faces()
+		var vertices = PoolVector3Array()
+		if mesh is MeshInstance:
+			vertices = mesh.get_mesh().get_faces()
+		if mesh is CSGShape:
+			#The CSG code only works if the csg is the root of the shape, because we're not making any assumptions about what kind of csg it is.
+			#This makes it less useful, but it also lets the csg shapes be usable as primitives.
+			if mesh.is_root_shape():
+				var csg_mesh = (mesh as CSGShape).get_meshes()[1]
+				vertices = csg_mesh.get_faces()
 		for i in range(vertices.size()):
 			var current_point: Vector3 = mesh.global_transform * vertices[i]
 			var current_on_ray := Geometry.get_closest_point_to_segment_uncapped(
