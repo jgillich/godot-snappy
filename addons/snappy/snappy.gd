@@ -66,7 +66,7 @@ func _forward_3d_gui_input(camera, event):
 			var meshes = []
 			for id in ids:
 				var obj = instance_from_id(id)
-				if obj != selected and obj.get_parent() != selected and obj is Node3D:
+				if obj != selected and !selected.is_ancestor_of(obj) and obj is Node3D:
 					meshes += find_meshes(obj)
 
 			var target = find_closest_point(meshes, from, direction)
