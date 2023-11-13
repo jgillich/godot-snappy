@@ -7,11 +7,13 @@ const VECTOR_INF = Vector3(INF, INF, INF)
 
 @onready var undo_redo = get_undo_redo()
 var undo_position = null
+var undo_rotation = null
 
 var selection = get_editor_interface().get_selection()
 var selected : Node3D = null
 var dragging = false
 var origin = Vector3()
+var origin_normal = Vector3()
 var origin_2d = null
 
 func _enter_tree():
@@ -40,6 +42,8 @@ func _forward_3d_gui_input(camera, event):
 		undo_redo.create_action("Snap vertex")
 		undo_redo.add_do_property(selected, "position", selected.position)
 		undo_redo.add_undo_property(selected, "position", undo_position)
+		undo_redo.add_do_property(selected, "rotation", selected.rotation)
+		undo_redo.add_undo_property(selected, "rotation", undo_rotation)
 		undo_redo.commit_action()
 	dragging = now_dragging
 
@@ -51,8 +55,11 @@ func _forward_3d_gui_input(camera, event):
 
 		if not dragging:
 			var meshes = find_meshes(selected)
-			origin = find_closest_point(meshes, from, direction)
+			var arr = find_closest_point(meshes, from, direction)
+			origin = arr[0]
+			origin_normal = arr[1]
 			undo_position = selected.position
+			undo_rotation = selected.rotation
 
 			if origin != VECTOR_INF:
 				origin_2d = camera.unproject_position(origin)
@@ -69,10 +76,19 @@ func _forward_3d_gui_input(camera, event):
 				if obj != selected and !selected.is_ancestor_of(obj) and obj is Node3D:
 					meshes += find_meshes(obj)
 
-			var target = find_closest_point(meshes, from, direction)
+			var arr = find_closest_point(meshes, from, direction)
+			var target = arr[0]
+			var target_normal = arr[1]
 			if target != VECTOR_INF:
 				selected.global_position -= origin - target
 				origin = target
+				if Input.is_key_pressed(KEY_N):
+					selected.look_at(target_normal + selected.position, Vector3.UP, true)
+				elif Input.is_key_pressed(KEY_M):
+					selected.look_at(target_normal + selected.position, Vector3.UP, true)
+					selected.rotate_object_local(Vector3(1, 0, 0), PI / 2.0)
+				else:
+					selected.rotation = undo_rotation
 			return true
 	else:
 		origin = VECTOR_INF
@@ -97,8 +113,9 @@ func find_meshes(node : Node3D) -> Array:
 			meshes += find_meshes(child)
 	return meshes
 
-func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> Vector3:
+func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> Array:
 	var closest := VECTOR_INF
+	var closest_normal := VECTOR_INF
 	var closest_distance := INF
 
 	# We will not use the distance between the vertex and the from position,
@@ -111,7 +128,9 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 	var segment_end := from + direction
 
 	for mesh in meshes:
-		var vertices = mesh.get_mesh().get_faces()
+		var arrays = mesh.get_mesh().surface_get_arrays(0)
+		var vertices = arrays[0]
+		var normals = arrays[1]
 		for i in range(vertices.size()):
 			var current_point: Vector3 = mesh.global_transform * vertices[i]
 			var current_on_ray := Geometry3D.get_closest_point_to_segment_uncapped(
@@ -120,5 +139,6 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 			if closest == VECTOR_INF or current_distance < closest_distance:
 				closest = current_point
 				closest_distance = current_distance
+				closest_normal = mesh.basis.get_rotation_quaternion() * normals[i]
 
-	return closest
+	return [closest, closest_normal]
