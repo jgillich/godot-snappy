@@ -2,8 +2,6 @@
 extends EditorPlugin
 
 const RAY_LENGTH = 1000
-# Workaround for Vector3.INF GDScript issue https://github.com/godotengine/godot/issues/61643
-const VECTOR_INF = Vector3(INF, INF, INF)
 
 @onready var undo_redo = get_undo_redo()
 var undo_position = null
@@ -38,7 +36,7 @@ func _forward_3d_gui_input(camera, event):
 
 	#if event is InputEventMouse:
 	var now_dragging = event.button_mask == MOUSE_BUTTON_LEFT and Input.is_key_pressed(KEY_V)
-	if dragging and not now_dragging and origin != VECTOR_INF:
+	if dragging and not now_dragging and origin != Vector3.INF:
 		undo_redo.create_action("Snap vertex")
 		undo_redo.add_do_property(selected, "position", selected.position)
 		undo_redo.add_undo_property(selected, "position", undo_position)
@@ -61,12 +59,12 @@ func _forward_3d_gui_input(camera, event):
 			undo_position = selected.position
 			undo_rotation = selected.rotation
 
-			if origin != VECTOR_INF:
+			if origin != Vector3.INF:
 				origin_2d = camera.unproject_position(origin)
 			else:
 				origin_2d = null
 			update_overlays()
-		elif origin != VECTOR_INF:
+		elif origin != Vector3.INF:
 			origin_2d = camera.unproject_position(origin)
 			update_overlays()
 			var ids = RenderingServer.instances_cull_ray(from, to, selected.get_world_3d().scenario)
@@ -79,7 +77,7 @@ func _forward_3d_gui_input(camera, event):
 			var arr = find_closest_point(meshes, from, direction)
 			var target = arr[0]
 			var target_normal = arr[1]
-			if target != VECTOR_INF:
+			if target != Vector3.INF:
 				selected.global_position -= origin - target
 				origin = target
 				if Input.is_key_pressed(KEY_N):
@@ -91,7 +89,7 @@ func _forward_3d_gui_input(camera, event):
 					selected.rotation = undo_rotation
 			return true
 	else:
-		origin = VECTOR_INF
+		origin = Vector3.INF
 		origin_2d = null
 		update_overlays()
 	return false
@@ -114,8 +112,8 @@ func find_meshes(node : Node3D) -> Array:
 	return meshes
 
 func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> Array:
-	var closest := VECTOR_INF
-	var closest_normal := VECTOR_INF
+	var closest := Vector3.INF
+	var closest_normal := Vector3.INF
 	var closest_distance := INF
 
 	# We will not use the distance between the vertex and the from position,
@@ -136,7 +134,7 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 			var current_on_ray := Geometry3D.get_closest_point_to_segment_uncapped(
 				current_point, segment_start, segment_end)
 			var current_distance := current_on_ray.distance_to(current_point)
-			if closest == VECTOR_INF or current_distance < closest_distance:
+			if closest == Vector3.INF or current_distance < closest_distance:
 				closest = current_point
 				closest_distance = current_distance
 				closest_normal = mesh.basis.get_rotation_quaternion() * normals[i]
