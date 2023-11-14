@@ -13,6 +13,7 @@ var dragging = false
 var origin = Vector3()
 var origin_normal = Vector3()
 var origin_2d = null
+var local_origin_offset = Vector3()
 
 func _enter_tree():
 	selection.connect("selection_changed", _on_selection_changed)
@@ -61,8 +62,10 @@ func _forward_3d_gui_input(camera, event):
 
 			if origin != Vector3.INF:
 				origin_2d = camera.unproject_position(origin)
+				local_origin_offset = selected.to_local(origin)
 			else:
 				origin_2d = null
+				local_origin_offset = Vector3()
 			update_overlays()
 		elif origin != Vector3.INF:
 			origin_2d = camera.unproject_position(origin)
@@ -81,10 +84,14 @@ func _forward_3d_gui_input(camera, event):
 				selected.global_position -= origin - target
 				origin = target
 				if Input.is_key_pressed(KEY_N):
-					selected.look_at(target_normal + selected.position, Vector3.UP, true)
+					selected.look_at(target_normal + selected.global_position, Vector3.UP, true)
+					selected.global_position += selected.to_global(local_origin_offset) - origin
+					origin = selected.to_global(local_origin_offset)
 				elif Input.is_key_pressed(KEY_M):
-					selected.look_at(target_normal + selected.position, Vector3.UP, true)
+					selected.look_at(target_normal + selected.global_position, Vector3.UP, true)
 					selected.rotate_object_local(Vector3(1, 0, 0), PI / 2.0)
+					selected.global_position += selected.to_global(local_origin_offset) - origin
+					origin = selected.to_global(local_origin_offset)
 				else:
 					selected.rotation = undo_rotation
 			return true
