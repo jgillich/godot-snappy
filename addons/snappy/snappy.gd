@@ -92,6 +92,8 @@ func find_meshes(node : Node3D) -> Array:
 	var meshes : Array = []
 	if node is MeshInstance3D:
 		meshes.append(node)
+	if node is CSGShape3D:
+		meshes.append(node)
 	for child in node.get_children():
 		if child is Node3D:
 			meshes += find_meshes(child)
@@ -111,7 +113,15 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 	var segment_end := from + direction
 
 	for mesh in meshes:
-		var vertices = mesh.get_mesh().get_faces()
+		var vertices = PackedVector3Array()
+		if mesh is MeshInstance3D:
+			vertices = mesh.get_mesh().get_faces()
+		if mesh is CSGShape3D:
+			if mesh.is_root_shape():
+				var csg_mesh = (mesh as CSGShape3D).get_meshes()[1]
+				vertices = csg_mesh.get_faces()
+			else:
+				vertices.append(Vector3.ZERO)
 		for i in range(vertices.size()):
 			var current_point: Vector3 = mesh.global_transform * vertices[i]
 			var current_on_ray := Geometry3D.get_closest_point_to_segment_uncapped(
@@ -122,3 +132,4 @@ func find_closest_point(meshes : Array, from : Vector3, direction : Vector3) -> 
 				closest_distance = current_distance
 
 	return closest
+
