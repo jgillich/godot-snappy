@@ -1,6 +1,9 @@
 @tool
 extends EditorPlugin
 
+# Which keyboard key should be pressed to activate the plugin.
+const ACTIVATION_KEY = KEY_V
+
 const RAY_LENGTH = 1000
 # Workaround for Vector3.INF GDScript issue https://github.com/godotengine/godot/issues/61643
 const VECTOR_INF = Vector3(INF, INF, INF)
@@ -14,6 +17,9 @@ var dragging = false
 var origin = Vector3()
 var origin_2d = null
 
+# Whether the plugin is currently active.
+var is_active := false
+
 func _enter_tree():
 	selection.connect("selection_changed", _on_selection_changed)
 
@@ -25,17 +31,28 @@ func _handles(object):
 func _forward_3d_draw_over_viewport(overlay):
 	if origin_2d != null:
 		overlay.draw_circle(origin_2d, 4, Color.YELLOW)
-	pass
 
 func _forward_3d_gui_input(camera, event):
 	# We need mouse events to get the cursor position
-	# This means pressing V when no mouse events are being sent does nothing
+	# This means pressing the activation key when no mouse events are being sent does nothing
 	# It's rarely noticable though
+	if event is InputEventKey:
+		if event.key_label == ACTIVATION_KEY:
+			if event.pressed and not is_active:
+				is_active = true
+				return true
+			if not event.pressed and is_active:
+				is_active = false
+				origin_2d = null
+				origin = VECTOR_INF
+				update_overlays()
+				return true
+		return false
+
 	if selected == null or not event is InputEventMouse:
 		return false
 
-	#if event is InputEventMouse:
-	var now_dragging = event.button_mask == MOUSE_BUTTON_LEFT and Input.is_key_pressed(KEY_V)
+	var now_dragging = event.button_mask == MOUSE_BUTTON_LEFT and is_active
 	if dragging and not now_dragging and origin != VECTOR_INF:
 		undo_redo.create_action("Snap vertex")
 		undo_redo.add_do_property(selected, "position", selected.position)
@@ -43,8 +60,7 @@ func _forward_3d_gui_input(camera, event):
 		undo_redo.commit_action()
 	dragging = now_dragging
 
-
-	if Input.is_key_pressed(KEY_V):
+	if is_active:
 		var from = camera.project_ray_origin(event.position)
 		var direction = camera.project_ray_normal(event.position)
 		var to = from + direction * RAY_LENGTH
@@ -74,10 +90,6 @@ func _forward_3d_gui_input(camera, event):
 				selected.global_position -= origin - target
 				origin = target
 			return true
-	else:
-		origin = VECTOR_INF
-		origin_2d = null
-		update_overlays()
 	return false
 
 func _on_selection_changed():
